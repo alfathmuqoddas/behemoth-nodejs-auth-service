@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
 import User from '../models/User';
 import logger from '../config/logger';
 import { userRegistrations, userLogins } from '../config/metrics';
+
+const privateKey = fs.readFileSync(path.join(__dirname, '../../keys/private.pem'), 'utf8');
 
 export const register = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -38,7 +42,8 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid password.' });
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'your_default_secret', {
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, privateKey, {
+      algorithm: 'RS256',
       expiresIn: '1h',
     });
 

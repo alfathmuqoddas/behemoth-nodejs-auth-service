@@ -9,6 +9,7 @@ This is a simple authentication service built with Node.js, Express, and Sequeli
 - JWT-based authentication
 - Protected routes middleware
 - Password hashing with bcrypt
+- Role-Based Access Control (RBAC) with 'admin' and 'user' roles
 
 ## Technologies Used
 
@@ -40,16 +41,31 @@ This is a simple authentication service built with Node.js, Express, and Sequeli
 
 ### Configuration
 
-Create a `.env` file in the root of the project and add the following environment variables. A `.env.example` is provided.
+Create a `.env` file in the root of the project and add the following environment variables.
 
 ```
 PORT=3000
-JWT_SECRET=your_super_secret_jwt_key
 ```
+
+### Generating RSA Keys
+
+This project uses the RS256 algorithm for signing JWTs, which requires a private/public key pair. A script is provided to generate these keys.
+
+Run the following command to generate the keys in the `keys/` directory:
+
+```bash
+npm run generate-keys
+```
+
+**Note:** In a production environment, you should manage your keys more securely, for example, using a secret management service.
 
 ## Available Scripts
 
 In the project directory, you can run the following commands:
+
+### `npm run generate-keys`
+
+Generates the RSA private and public keys required for JWT signing.
 
 ### `npm run dev`
 
@@ -106,6 +122,21 @@ Runs the compiled app in production mode. Make sure you have run `npm run build`
         ```json
         {
           "message": "Welcome user <user_id>"
+        }
+        ```
+
+### Admin Routes
+
+-   **Get admin data**
+    -   **URL:** `/api/admin`
+    -   **Method:** `GET`
+    -   **Headers:**
+        -   `Authorization`: `Bearer <your_jwt_token>`
+    -   **Description:** This route is only accessible to users with the `admin` role.
+    -   **Success Response:**
+        ```json
+        {
+          "message": "Welcome to the admin area!"
         }
         ```
 

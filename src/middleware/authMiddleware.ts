@@ -1,9 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
+
+const publicKey = fs.readFileSync(path.join(__dirname, '../../keys/public.pem'), 'utf8');
 
 export interface CustomJwtPayload extends JwtPayload {
   id: string;
   email: string;
+  role: 'admin' | 'user';
 }
 
 export interface AuthRequest extends Request {
@@ -18,7 +23,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_default_secret') as CustomJwtPayload;
+    const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as CustomJwtPayload;
     req.user = decoded;
     next();
   } catch (error) {

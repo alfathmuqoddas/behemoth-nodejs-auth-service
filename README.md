@@ -44,6 +44,17 @@ This is a Twelve-Factor App compliant authentication service built with Node.js,
     npm install
     ```
 
+### Docker
+
+1.  Build the Docker image:
+    ```bash
+    docker build -t <image-name> .
+    ```
+2.  Run the Docker image:
+    ```bash
+    docker run -d -p 3010:3000 --env-file ./.env -e DB_HOST=host.docker.internal -v /home/alfath/keys:/usr/src/app/keys --add-host=host.docker.internal:host-gateway --name behemoth-auth-service localhost:5000/behemoth-nodejs-auth-service
+    ```
+
 ### Configuration
 
 1.  Create a `.env` file in the root directory based on the following template:

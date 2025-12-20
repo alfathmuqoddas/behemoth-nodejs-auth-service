@@ -16,10 +16,16 @@ export const register = async (req: Request, res: Response) => {
   const { email, password, role } = req.body;
 
   try {
+    if (!email || !password) {
+      logger.warn(`Login attempt with missing email or password`);
+      return res.status(400).json({ message: "Missing email or password." });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({ email, password: hashedPassword, role });
-    logger.info(`User registered: ${user.email}`);
+
     userRegistrations.inc();
+
+    logger.info(`User registered: ${user.email}`);
     res.status(201).json({ id: user.id, email: user.email });
   } catch (error) {
     logger.error({ error }, "Error registering new user.");
@@ -41,8 +47,8 @@ export const login = async (req: Request, res: Response) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      logger.warn(`Login attempt with invalid password for user: ${email}`);
-      return res.status(401).json({ message: "Invalid password." });
+      logger.warn(`Login attempt with invalid for user: ${email}`);
+      return res.status(401).json({ message: "Invalid email or password." });
     }
 
     const token = jwt.sign(
@@ -55,9 +61,10 @@ export const login = async (req: Request, res: Response) => {
     );
 
     logger.info(`User logged in: ${email}`);
-    userLogins.inc();
+    userLogins.inc({ result: "success" });
     res.status(200).json({ token });
   } catch (error) {
+    userLogins.inc({ result: "failure" });
     logger.error({ error }, "Error logging in user.");
     res.status(500).json({ message: "Error logging in.", error });
   }

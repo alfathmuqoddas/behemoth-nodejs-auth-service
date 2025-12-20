@@ -1,23 +1,27 @@
 # Node.js Authentication Service
 
-This is a simple authentication service built with Node.js, Express, and Sequelize, using TypeScript. It provides user registration and login functionality using JSON Web Tokens (JWT).
+This is a Twelve-Factor App compliant authentication service built with Node.js, Express, and Sequelize, using TypeScript. It provides user registration and login functionality using JSON Web Tokens (JWT) signed with RS256 (RSA).
 
 ## Features
 
-- User registration (`/api/auth/register`)
-- User login (`/api/auth/login`)
-- JWT-based authentication
-- Protected routes middleware
-- Password hashing with bcrypt
-- Role-Based Access Control (RBAC) with 'admin' and 'user' roles
+- **User Registration**: `POST /register` (Supports RBAC with 'user' and 'admin' roles)
+- **User Login**: `POST /login`
+- **JWT-based Authentication**: Secure RS256 signing using public/private key pairs.
+- **Protected Routes**: Middleware to protect endpoints (`/protected/profile`).
+- **RBAC**: Admin-only routes (`/protected/admin`).
+- **Password Hashing**: Secure hashing using `bcryptjs`.
+- **Database**: PostgreSQL integration via Sequelize.
+- **Logging**: Structured logging with `pino`.
+- **Metrics**: Prometheus metrics exposed at `/metrics`.
 
 ## Technologies Used
 
 - **Backend:** Node.js, Express.js
-- **ORM:** Sequelize
-- **Database:** SQLite (in-memory)
 - **Language:** TypeScript
-- **Authentication:** JSON Web Tokens (JWT), bcryptjs
+- **ORM:** Sequelize
+- **Database:** PostgreSQL
+- **Authentication:** JSON Web Tokens (JWT) (RS256), bcryptjs
+- **Logging:** Pino, Pino-http
 - **Monitoring:** Prometheus (prom-client)
 
 ## Getting Started
@@ -25,14 +29,15 @@ This is a simple authentication service built with Node.js, Express, and Sequeli
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v14 or later)
-- [npm](https://www.npmjs.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
 
 ### Installation
 
 1.  Clone the repository:
     ```bash
     git clone <repository-url>
-    cd nodejs-auth-service
+    cd behemoth-nodejs-auth-service
     ```
 2.  Install the dependencies:
     ```bash
@@ -41,108 +46,118 @@ This is a simple authentication service built with Node.js, Express, and Sequeli
 
 ### Configuration
 
-Create a `.env` file in the root of the project and add the following environment variables.
+1.  Create a `.env` file in the root directory based on the following template:
 
-```
-PORT=3000
-```
+    ```env
+    # Server Configuration
+    PORT=3000
 
-### Generating RSA Keys
+    # Database Configuration
+    DB_HOST=127.0.0.1
+    DB_PORT=5432
+    DB_NAME=postgres
+    DB_USER=postgres
+    DB_PASSWORD=your_password
+    ```
 
-This project uses the RS256 algorithm for signing JWTs, which requires a private/public key pair. A script is provided to generate these keys.
+2.  **Generate RSA Keys:**
+    This project uses RS256 for JWTs, requiring a private and public key pair. You must generate these keys in the `keys/` directory.
 
-Run the following command to generate the keys in the `keys/` directory:
+    ```bash
+    # Create keys directory if it doesn't exist (it should exist in the repo)
+    mkdir -p keys
 
-```bash
-npm run generate-keys
-```
+    # Generate Private Key
+    openssl genrsa -out keys/private.pem 2048
 
-**Note:** In a production environment, you should manage your keys more securely, for example, using a secret management service.
+    # Generate Public Key
+    openssl rsa -in keys/private.pem -outform PEM -pubout -out keys/public.pem
+    ```
+
+### Database Setup
+
+1.  Ensure your PostgreSQL server is running and the database specified in `DB_NAME` exists (or let Sequelize create it if configured).
+2.  Run migrations to create the necessary tables:
+    ```bash
+    npm run db:migrate
+    ```
 
 ## Available Scripts
 
-In the project directory, you can run the following commands:
-
-### `npm run generate-keys`
-
-Generates the RSA private and public keys required for JWT signing.
-
-### `npm run dev`
-
-Runs the app in development mode using `ts-node` and `nodemon`. The server will automatically restart if you make changes to the code.
-
-### `npm run build`
-
-Builds the app for production to the `dist` folder. It transpiles TypeScript to JavaScript.
-
-### `npm start`
-
-Runs the compiled app in production mode. Make sure you have run `npm run build` first.
+- `npm run dev`: Runs the app in development mode with `nodemon`.
+- `npm run build`: Compiles TypeScript to JavaScript in the `dist/` folder.
+- `npm start`: Runs the compiled app (requires `npm run build` first).
+- `npm run db:migrate`: Runs pending migrations.
+- `npm run db:migrate:undo`: Reverts the most recent migration.
+- `npm run db:status`: Shows the status of all migrations.
 
 ## API Endpoints
 
 ### Authentication
 
--   **Register a new user**
-    -   **URL:** `/api/auth/register`
-    -   **Method:** `POST`
-    -   **Body:**
-        ```json
-        {
-          "email": "test@example.com",
-          "password": "yourpassword"
-        }
-        ```
+#### Register a new user
 
--   **Login a user**
-    -   **URL:** `/api/auth/login`
-    -   **Method:** `POST`
-    -   **Body:**
-        ```json
-        {
-          "email": "test@example.com",
-          "password": "yourpassword"
-        }
-        ```
-    -   **Success Response:**
-        ```json
-        {
-          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        }
-        ```
+- **URL:** `/register`
+- **Method:** `POST`
+- **Body:**
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "securepassword",
+    "role": "user"
+  }
+  ```
+  _Note: `role` is optional and defaults to user logic if not enforced, but the model supports 'admin' or 'user'._
+
+#### Login
+
+- **URL:** `/login`
+- **Method:** `POST`
+- **Body:**
+  ```json
+  {
+    "email": "user@example.com",
+    "password": "securepassword"
+  }
+  ```
+- **Success Response:**
+  ```json
+  {
+    "token": "eyJhbGciOiJSUzI1NiIs..."
+  }
+  ```
 
 ### Protected Routes
 
--   **Get user profile**
-    -   **URL:** `/api/profile`
-    -   **Method:** `GET`
-    -   **Headers:**
-        -   `Authorization`: `Bearer <your_jwt_token>`
-    -   **Success Response:**
-        ```json
-        {
-          "message": "Welcome user <user_id>"
-        }
-        ```
+Headers required: `Authorization: Bearer <your_jwt_token>`
 
-### Admin Routes
+#### Get User Profile
 
--   **Get admin data**
-    -   **URL:** `/api/admin`
-    -   **Method:** `GET`
-    -   **Headers:**
-        -   `Authorization`: `Bearer <your_jwt_token>`
-    -   **Description:** This route is only accessible to users with the `admin` role.
-    -   **Success Response:**
-        ```json
-        {
-          "message": "Welcome to the admin area!"
-        }
-        ```
+- **URL:** `/protected/profile`
+- **Method:** `GET`
+- **Response:**
+  ```json
+  {
+    "message": "Welcome user <user_id>"
+  }
+  ```
+
+#### Admin Area
+
+- **URL:** `/protected/admin`
+- **Method:** `GET`
+- **Response:**
+  ```json
+  {
+    "message": "Welcome to the admin area!"
+  }
+  ```
+  _Note: Requires a user with `role: 'admin'`._
 
 ### Monitoring
 
--   **Prometheus Metrics**
-    -   **URL:** `/metrics`
-    -   **Method:** `GET`
-    -   **Description:** Exposes application metrics in a format that can be scraped by a Prometheus server.
+#### Prometheus Metrics
+
+- **URL:** `/metrics`
+- **Method:** `GET`
+- **Description:** Exposes application metrics for Prometheus scraping.

@@ -1,10 +1,10 @@
-import express, { Application, Request, Response } from 'express';
-import pinoHttp from 'pino-http';
-import authRoutes from './routes/authRoutes';
-import protectedRoutes from './routes/protectedRoutes';
-import logger from './config/logger';
-import { register } from './config/metrics';
-import { metricsMiddleware } from './middleware/metricsMiddleware';
+import express, { Application, Request, Response } from "express";
+import pinoHttp from "pino-http";
+import authRoutes from "./routes/authRoutes";
+import protectedRoutes from "./routes/protectedRoutes";
+import logger from "./config/logger";
+import { register } from "./config/metrics";
+import { metricsMiddleware } from "./middleware/metricsMiddleware";
 
 const app: Application = express();
 
@@ -13,16 +13,12 @@ app.use(metricsMiddleware);
 
 app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-  res.send('Hello, World!');
-});
-
-app.get('/metrics', async (req: Request, res: Response) => {
-  res.set('Content-Type', register.contentType);
+app.get("/metrics", async (req: Request, res: Response) => {
+  res.set("Content-Type", register.contentType);
   res.end(await register.metrics());
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api', protectedRoutes);
+app.use("/", authRoutes);
+app.use("/protected", protectedRoutes);
 
 export default app;

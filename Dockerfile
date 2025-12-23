@@ -1,22 +1,30 @@
-FROM gcr.io/distroless/nodejs24-debian12 AS runner
+FROM node:24-slim AS deps
+WORKDIR /app
 
-WORKDIR /usr/src/app
+COPY package.json package-lock.json ./
+
+RUN npm ci --only=production
+
+
+FROM node:24-slim AS builder
+WORKDIR /app
+
+COPY . .
+RUN npm install && npm run build
+
+
+FROM gcr.io/distroless/nodejs24-debian12 AS runner
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy production deps
-COPY --from=dependencies /usr/src/app/node_modules ./node_modules
+WORKDIR /app
 
-# Copy build output
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/package.json ./package.json
-COPY --from=builder /usr/src/app/config ./config
+COPY --from=deps /app/node_modules ./node_modules
 
-# Optional runtime config
-COPY --from=builder /usr/src/app/.sequelizerc ./.sequelizerc
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package.json ./package.json
 
-# Use built-in nonroot user
 USER nonroot
 
 EXPOSE 3000

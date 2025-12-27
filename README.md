@@ -52,7 +52,7 @@ This is a Twelve-Factor App compliant authentication service built with Node.js,
     ```
 2.  Run the Docker image:
     ```bash
-    docker run -d -p 3010:3000 --env-file ./.env -e DB_HOST=host.docker.internal -v /home/alfath/keys:/usr/src/app/keys --add-host=host.docker.internal:host-gateway --name behemoth-auth-service localhost:5000/behemoth-nodejs-auth-service
+    docker run -d -p 3010:3010 --env-file ./.env --network your_shared_network -v /home/alfath/keys:/app/keys --name behemoth-auth-service localhost:5000/behemoth-nodejs-auth-service
     ```
 
 ### Configuration
@@ -61,10 +61,10 @@ This is a Twelve-Factor App compliant authentication service built with Node.js,
 
     ```env
     # Server Configuration
-    PORT=3000
+    PORT=3010
 
     # Database Configuration
-    DB_HOST=127.0.0.1
+    DB_HOST=shared_postgres (make sure the container and postgres container in the same network)
     DB_PORT=5432
     DB_NAME=postgres
     DB_USER=postgres

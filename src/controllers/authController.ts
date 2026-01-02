@@ -62,7 +62,7 @@ export const login = async (req: Request, res: Response) => {
 
     logger.info(`User logged in: ${email}`);
     userLogins.inc({ result: "success" });
-    res.status(200).json({ token });
+    res.status(200).json({ token, user: { id: user.id, email: user.email } });
   } catch (error) {
     userLogins.inc({ result: "failure" });
     logger.error({ error }, "Error logging in user.");

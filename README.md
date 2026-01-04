@@ -51,8 +51,14 @@ This is a Twelve-Factor App compliant authentication service built with Node.js,
     docker build -t <image-name> .
     ```
 2.  Run the Docker image:
+
     ```bash
     docker run -d -p 3010:3010 --env-file ./.env --network your_shared_network -v /home/alfath/keys:/app/keys --name behemoth-auth-service localhost:5000/behemoth-nodejs-auth-service
+    ```
+
+3.  Tips run the development server on docker container (make sure your postgres container is running on the same network)
+    ```bash
+    docker run --rm -v $(pwd):/app -w /app -p 3010:3010 --network proxy node:lts-alpine sh -c "npm install && npm run dev -- --host 0.0.0.0"
     ```
 
 ### Configuration
@@ -60,15 +66,15 @@ This is a Twelve-Factor App compliant authentication service built with Node.js,
 1.  Create a `.env` file in the root directory based on the following template:
 
     ```env
-    # Server Configuration
-    PORT=3010
-
-    # Database Configuration
     DB_HOST=shared_postgres (make sure the container and postgres container in the same network)
+    DB_HOST=localhost (if you are running postgres locally)
     DB_PORT=5432
     DB_NAME=postgres
     DB_USER=postgres
     DB_PASSWORD=your_password
+    PORT=3010
+    NODE_ENV=development
+    DB_DIALECT=postgres
     ```
 
 2.  **Generate RSA Keys:**
@@ -172,3 +178,23 @@ Headers required: `Authorization: Bearer <your_jwt_token>`
 - **URL:** `/metrics`
 - **Method:** `GET`
 - **Description:** Exposes application metrics for Prometheus scraping.
+
+### Miscelaneous
+
+#### Liveness Check
+
+- **URL:** `/health/liveness`
+- **Method:** `GET`
+- **Description:** Returns a 200 OK response if the service is live.
+
+#### Readiness Check
+
+- **URL:** `/health/readyness`
+- **Method:** `GET`
+- **Description:** Returns a 200 OK response if the service is ready.
+
+#### Startup Check
+
+- **URL:** `/health/startup`
+- **Method:** `GET`
+- **Description:** Returns a 200 OK response if the service is started.

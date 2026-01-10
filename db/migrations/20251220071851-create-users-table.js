@@ -24,7 +24,11 @@ module.exports = {
         },
         role: {
           // For ENUMs, define the values explicitly in the migration
-          type: Sequelize.ENUM("admin", "user"),
+          type: Sequelize.ENUM({
+            name: "enum_users_role",
+            values: ["admin", "user"],
+          }),
+          defaultValue: "user",
           defaultValue: "user",
           allowNull: false,
         },
@@ -50,5 +54,8 @@ module.exports = {
       tableName: "users",
       schema: "auth_service",
     });
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS "auth_service"."enum_users_role";'
+    );
   },
 };

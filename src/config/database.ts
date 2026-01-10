@@ -1,13 +1,16 @@
-import { Sequelize, Options } from "sequelize";
-import logger from "./logger";
+import { Sequelize } from "sequelize";
 import dotenv from "dotenv";
+import logger from "./logger";
 
 dotenv.config();
 
-const connectionOptions: Options = {
+const sequelize = new Sequelize({
   dialect: "postgres",
   host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || "5432"),
+  port: Number(process.env.DB_PORT || 5432),
+  username: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 
   logging: (msg) => logger.debug(msg),
 
@@ -17,15 +20,6 @@ const connectionOptions: Options = {
     acquire: 30000,
     idle: 10000,
   },
-
-  dialectOptions: {},
-};
-
-const sequelize = new Sequelize(
-  process.env.DB_NAME || "postgres",
-  process.env.DB_USER || "postgres",
-  process.env.DB_PASSWORD,
-  connectionOptions
-);
+});
 
 export default sequelize;

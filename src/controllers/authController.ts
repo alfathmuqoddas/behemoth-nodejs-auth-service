@@ -58,7 +58,9 @@ export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({
+      where: { email },
+    });
 
     if (!user) {
       logger.warn(`Login attempt with unregistered email: ${email}`);
@@ -81,11 +83,18 @@ export const login = async (req: Request, res: Response) => {
       }
     );
 
+    const {
+      password: userPassword,
+      createdAt,
+      updatedAt,
+      ...userResponse
+    } = user.toJSON();
+
     logger.info(`User logged in: ${email}`);
     userLogins.inc({ result: "success" });
     res.status(200).json({
       token,
-      user: { id: user.id, email: user.email, role: user.role },
+      user: userResponse,
     });
   } catch (error) {
     userLogins.inc({ result: "failure" });
